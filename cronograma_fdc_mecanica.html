@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Cronograma ECA - Controle Avançado de Sistemas Mecânicos</title>
+<style>
+  :root{
+    --bg:#f6f5f1; --card:#ffffff; --ink:#1c1c1a; --sub:#6b6a63;
+    --line:#d8d6cc; --accent:#185fa5; --accent-bg:#e6f1fb;
+    --pred:#993c1d; --pred-bg:#faece7;
+    --succ:#0f6e56; --succ-bg:#e1f5ee;
+    --fdc:#854f0b; --fdc-bg:#faeeda; --fdc-border:#e0b064;
+    --elet:#5f6b1e; --elet-bg:#f1f4e2; --elet-border:#b9c37f;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+  }
+  h1{font-size:20px; font-weight:600; margin:0 0 4px;}
+  p.sub{font-size:13px; color:var(--sub); margin:0 0 16px; max-width:800px; line-height:1.55;}
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--sub); margin-bottom:18px;}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:10px; height:10px; border-radius:3px; display:inline-block;}
+  #wrap{position:relative; overflow-x:auto; padding-bottom:8px;}
+  #board{position:relative; display:flex; gap:24px; min-width:1780px;}
+  svg#lines{position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:visible;}
+  .col{width:156px; flex-shrink:0;}
+  .col h2{
+    font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;
+    color:var(--sub); text-align:center; margin:0 0 10px; padding-bottom:6px;
+    border-bottom:1px solid var(--line);
+  }
+  .card{
+    background:var(--card); border:1px solid var(--line); border-radius:8px;
+    padding:8px 9px; margin-bottom:9px; cursor:pointer; position:relative;
+    transition:opacity .15s, border-color .15s, box-shadow .15s;
+    box-shadow:0 1px 2px rgba(0,0,0,.03);
+  }
+  .card.t-f{background:var(--fdc-bg); border-color:var(--fdc-border);}
+  .card.t-e{background:var(--elet-bg); border-color:var(--elet-border); border-style:dashed;}
+  .card .code{font-size:10px; color:var(--sub); font-family:ui-monospace,Menlo,monospace;}
+  .card .name{font-size:12px; font-weight:500; line-height:1.3; margin-top:2px;}
+  .card .tag{display:inline-block; font-size:8.5px; font-weight:700; text-transform:uppercase; letter-spacing:.03em; border-radius:4px; padding:1px 5px; margin-top:5px;}
+  .card.t-f .tag{color:var(--fdc); background:#fff;}
+  .card.t-e .tag{color:var(--elet); background:#fff;}
+  .card.selected{border-color:var(--accent); box-shadow:0 0 0 2px var(--accent-bg);}
+  .card.selected .name{color:var(--accent);}
+  .card.pred{border-color:var(--pred); background:var(--pred-bg);}
+  .card.pred .name{color:var(--pred);}
+  .card.succ{border-color:var(--succ); background:var(--succ-bg);}
+  .card.succ .name{color:var(--succ);}
+  .card.dim{opacity:.28;}
+  #hint{font-size:12px; color:var(--sub); margin-top:14px;}
+  #hint b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<h1>Engenharia de Controle e Automação — UFRGS</h1>
+<p class="sub">Cronograma completo da ênfase <b>Controle Avançado de Sistemas Mecânicos</b>: núcleo comum (etapas 1–7) + obrigatórias específicas desta ênfase (etapas 8–9, destacadas em <span style="color:var(--fdc)">âmbar</span>) + todas as eletivas/adicionais disponíveis (em <span style="color:var(--elet)">verde tracejado</span>, continuam sendo eletivas — cursar é opcional). Clique numa disciplina para ver de onde vêm os pré-requisitos e o que ela libera.</p>
+
+<div class="legend">
+  <span><i class="dot" style="background:var(--card);border:1px solid var(--line)"></i>Obrigatória (núcleo comum)</span>
+  <span><i class="dot" style="background:var(--fdc-bg);border:1px solid var(--fdc-border)"></i>Obrigatória desta ênfase</span>
+  <span><i class="dot" style="background:var(--elet-bg);border:1px dashed var(--elet-border)"></i>Eletiva (opcional)</span>
+  <span><i class="dot" style="background:var(--pred)"></i>Pré-requisito (vem de)</span>
+  <span><i class="dot" style="background:var(--succ)"></i>Libera</span>
+</div>
+
+<div id="wrap">
+  <svg id="lines"></svg>
+  <div id="board"></div>
+</div>
+
+<p id="hint">Clique em uma disciplina para destacar suas conexões. Clique novamente para limpar.</p>
+
+<script>
+const data = [{"c": "INF01202", "n": "Algoritmos e Programação", "e": 1, "pr": [], "t": "o"}, {"c": "MAT01353", "n": "Cálculo e Geometria Analítica I", "e": 1, "pr": [], "t": "o"}, {"c": "FIS01181", "n": "Física I-C", "e": 1, "pr": [], "t": "o"}, {"c": "ARQ03317", "n": "Geometria Descritiva II-A", "e": 1, "pr": [], "t": "o"}, {"c": "CCA99001", "n": "Introdução à Eng. de Controle e Automação", "e": 1, "pr": [], "t": "o"}, {"c": "QUI01009", "n": "Química Fundamental A", "e": 1, "pr": [], "t": "o"}, {"c": "MAT01355", "n": "Álgebra Linear I-A", "e": 2, "pr": ["MAT01353"], "t": "o"}, {"c": "MAT01354", "n": "Cálculo e Geometria Analítica II-A", "e": 2, "pr": ["MAT01353"], "t": "o"}, {"c": "ARQ03319", "n": "Desenho Técnico II-A", "e": 2, "pr": ["ARQ03317"], "t": "o"}, {"c": "FIS01182", "n": "Física Geral - Eletromagnetismo", "e": 2, "pr": ["FIS01181"], "t": "o"}, {"c": "ENG03041", "n": "Mecânica Aplicada I", "e": 2, "pr": ["CCA99001", "FIS01181", "MAT01353"], "t": "o"}, {"c": "INF01057", "n": "Programação Orientada a Objeto", "e": 2, "pr": ["INF01202"], "t": "o"}, {"c": "ENG10001", "n": "Circuitos Elétricos I-C", "e": 3, "pr": ["FIS01182", "MAT01354"], "t": "o"}, {"c": "MAT01167", "n": "Equações Diferenciais II", "e": 3, "pr": ["MAT01354", "MAT01355"], "t": "o"}, {"c": "FIS01183", "n": "Física III-C", "e": 3, "pr": ["FIS01182"], "t": "o"}, {"c": "ENG03043", "n": "Materiais para Engenharia A", "e": 3, "pr": ["QUI01009"], "t": "o"}, {"c": "ENG03042", "n": "Mecânica Aplicada II", "e": 3, "pr": ["ENG03041"], "t": "o"}, {"c": "MAT02219", "n": "Probabilidade e Estatística", "e": 3, "pr": ["MAT01353"], "t": "o"}, {"c": "ENG10042", "n": "Sistemas Digitais-A", "e": 3, "pr": [], "t": "o"}, {"c": "MAT01169", "n": "Cálculo Numérico", "e": 4, "pr": ["INF01202", "MAT01167"], "t": "o"}, {"c": "ENG10002", "n": "Circuitos Elétricos II-C", "e": 4, "pr": ["ENG10001", "MAT01167"], "t": "o"}, {"c": "ENG10043", "n": "Laboratório de Sistemas Digitais", "e": 4, "pr": ["ENG10042"], "t": "o"}, {"c": "MAT01168", "n": "Matemática Aplicada II", "e": 4, "pr": ["MAT01167"], "t": "o"}, {"c": "ENG03092", "n": "Mecânica dos Sólidos I-A", "e": 4, "pr": ["ENG03041", "ENG03043"], "t": "o"}, {"c": "ENG03316", "n": "Mecanismos I", "e": 4, "pr": ["ENG03042"], "t": "o"}, {"c": "ENG03044", "n": "Modelagem de Sistemas Mecânicos", "e": 4, "pr": ["ENG10001", "FIS01183", "MAT01167"], "t": "o"}, {"c": "ENG10044", "n": "Eletrônica Fundamental I-B", "e": 5, "pr": ["ENG10002"], "t": "o"}, {"c": "ENG10003", "n": "Laboratório de Circuitos Elétricos", "e": 5, "pr": ["ENG10002"], "t": "o"}, {"c": "ENG03004", "n": "Mecânica dos Sólidos II", "e": 5, "pr": ["ENG03092", "MAT01169"], "t": "o"}, {"c": "ENG10017", "n": "Sistemas e Sinais", "e": 5, "pr": ["MAT01168"], "t": "o"}, {"c": "ENG07086", "n": "Termodinâmica e Transf. de Calor", "e": 5, "pr": ["FIS01183"], "t": "o"}, {"c": "ENG10026", "n": "Robótica / Robótica A", "e": 5, "pr": ["ENG03316"], "t": "o"}, {"c": "ENG10047", "n": "Fundamentos de Máquinas Elétricas", "e": 6, "pr": ["ENG10002"], "t": "o"}, {"c": "ENG10022", "n": "Instrum. Fundamental p/ Controle e Automação", "e": 6, "pr": ["ENG10044", "MAT02219"], "t": "o"}, {"c": "ENG10045", "n": "Laboratório de Eletrônica", "e": 6, "pr": ["ENG10003", "ENG10044"], "t": "o"}, {"c": "ENG07069", "n": "Princípios da Mecânica de Fluidos", "e": 6, "pr": ["ENG07086"], "t": "o"}, {"c": "ENG10023", "n": "Sistemas de Automação", "e": 6, "pr": ["ENG10043", "INF01057"], "t": "o"}, {"c": "ENG10004", "n": "Sistemas de Controle I-B", "e": 6, "pr": ["ENG03044", "ENG10017"], "t": "o"}, {"c": "ENG10049", "n": "Acionamento de Máq. Elétricas-A", "e": 7, "pr": ["ENG10045", "ENG10047"], "t": "o"}, {"c": "ENG10005", "n": "Laboratório de Controle", "e": 7, "pr": ["ENG10004"], "t": "o"}, {"c": "ENG04475", "n": "Microprocessadores I", "e": 7, "pr": ["ENG10043", "ENG10044"], "t": "o"}, {"c": "ENG03021", "n": "Processos Discretos de Produção", "e": 7, "pr": ["ENG03043"], "t": "o"}, {"c": "ENG10048", "n": "Protocolos de Comunicação-A", "e": 7, "pr": ["ENG10023"], "t": "o"}, {"c": "ENG10018", "n": "Sistemas de Controle II", "e": 7, "pr": ["ENG10004"], "t": "o"}, {"c": "ENG03027", "n": "Sistemas Hidráulicos e Pneumáticos", "e": 7, "pr": ["ENG07069"], "t": "o"}, {"c": "ENG03045", "n": "Elementos de Máquinas", "e": 8, "pr": ["ENG03004", "ENG03021"], "t": "o"}, {"c": "ENG07042", "n": "Modelagem e Controle de Proc. Industriais", "e": 8, "pr": ["ENG07069", "ENG10018"], "t": "o"}, {"c": "ENG10019", "n": "Sistemas de Controle Digitais", "e": 8, "pr": ["ENG04475", "ENG10004"], "t": "o"}, {"c": "ENG03387", "n": "Sistemas de Fabricação", "e": 8, "pr": ["ENG03021"], "t": "o"}, {"c": "ENG07087", "n": "Controle Avançado de Processos", "e": 9, "pr": ["ENG07042"], "t": "o"}, {"c": "ESTAGIO", "n": "Estágio Supervisionado", "e": 9, "pr": ["ENG03027", "ENG10018"], "t": "o"}, {"c": "TCC1", "n": "Trab. de Conclusão CCA - I", "e": 9, "pr": ["ENG03027", "ENG10005", "ENG10048", "ENG10049"], "t": "o"}, {"c": "ENG03047", "n": "Projetos de Sistemas Mecânicos", "e": 9, "pr": ["ENG03044", "ENG03045"], "t": "f"}, {"c": "ENG03010", "n": "Ciência, Tecnologia e Ambiente", "e": 10, "pr": [], "t": "o"}, {"c": "ENG03048", "n": "Gerência e Adm. de Projetos", "e": 10, "pr": [], "t": "o"}, {"c": "TCC2", "n": "Trab. de Conclusão CCA - II", "e": 10, "pr": ["ENG03045", "ENG07042", "ENG10019", "TCC1"], "t": "o"}, {"c": "EDU03071", "n": "Libras", "e": 1, "pr": [], "t": "e"}, {"c": "CCA99005", "n": "Tópicos Especiais em ECA I", "e": 1, "pr": [], "t": "e"}, {"c": "CCA99006", "n": "Tópicos Especiais em ECA II", "e": 1, "pr": [], "t": "e"}, {"c": "CCA99007", "n": "Tópicos Especiais em ECA III", "e": 1, "pr": [], "t": "e"}, {"c": "INF01126", "n": "Estruturas de Dados I", "e": 2, "pr": ["INF01202"], "t": "e"}, {"c": "INF01017", "n": "Aprendizado de Máquina", "e": 3, "pr": ["INF01057"], "t": "e"}, {"c": "INF01037", "n": "Computação Evolutiva", "e": 3, "pr": ["INF01057"], "t": "e"}, {"c": "ADM01135", "n": "Engenharia Econômica e Avaliações", "e": 4, "pr": ["MAT02219"], "t": "e"}, {"c": "CCA99008", "n": "Projeto Integrado I", "e": 6, "pr": ["ENG03044", "ENG03316", "ENG07086", "ENG10003", "ENG10042"], "t": "e"}, {"c": "ENG10052", "n": "Laboratório de Robótica", "e": 6, "pr": ["ENG10026"], "t": "e"}, {"c": "ENG10054", "n": "Robótica Móvel", "e": 6, "pr": ["ENG10017", "INF01057", "MAT02219"], "t": "e"}, {"c": "CCA99011", "n": "Tópicos em Proc. Digital de Sinais I", "e": 6, "pr": ["ENG10017"], "t": "e"}, {"c": "ENG10027", "n": "Eletrônica Fundamental II-B", "e": 6, "pr": ["ENG10002", "ENG10044"], "t": "e"}, {"c": "ENG10046", "n": "Princípios de Eletrônica de Potência", "e": 6, "pr": ["ENG10044"], "t": "e"}, {"c": "ENG10021", "n": "Sistemas a Eventos Discretos", "e": 7, "pr": ["ENG10023"], "t": "e"}, {"c": "ENG10051", "n": "Dinâmica e Controle de Robôs", "e": 7, "pr": ["ENG10004", "ENG10026"], "t": "e"}, {"c": "CCA99009", "n": "Projeto Integrado II", "e": 8, "pr": ["CCA99008", "ENG03021", "ENG04475", "ENG07069", "ENG10004", "ENG10022", "ENG10023"], "t": "e"}, {"c": "ENG07043", "n": "Instrumentação de Processos Industriais", "e": 8, "pr": ["ENG07069", "ENG10018"], "t": "e"}, {"c": "ENG09023", "n": "Planejamento Estratégico da Produção", "e": 8, "pr": ["ENG03021"], "t": "e"}, {"c": "ENG03046", "n": "Controle de Sistemas Fluído-Mecânicos", "e": 8, "pr": ["ENG03027", "ENG10018"], "t": "e"}, {"c": "ENG03386", "n": "Fabricação Auxiliada por Computador", "e": 8, "pr": ["ENG03021"], "t": "e"}, {"c": "ENG10050", "n": "Laboratório de Máquinas e Acionamentos Elétricos", "e": 8, "pr": ["ENG10049"], "t": "e"}, {"c": "ENG10055", "n": "Sistemas de Tempo Real - I", "e": 8, "pr": ["ENG04475"], "t": "e"}, {"c": "CCA99010", "n": "Projeto Integrado III", "e": 9, "pr": ["CCA99009"], "t": "e"}, {"c": "ENG07012", "n": "Laboratório de Controle e Operação de Processos", "e": 9, "pr": ["ENG07042"], "t": "e"}, {"c": "ENG07062", "n": "Otimização Aplicada", "e": 9, "pr": ["ENG07042"], "t": "e"}];
+
+const board = document.getElementById('board');
+for(let e=1;e<=10;e++){
+  const items = data.filter(d=>d.e===e);
+  if(items.length===0) continue;
+  const col = document.createElement('div');
+  col.className='col';
+  const h = document.createElement('h2');
+  h.textContent = 'Etapa '+e;
+  col.appendChild(h);
+  items.forEach(d=>{
+    const card = document.createElement('div');
+    card.className='card t-'+d.t;
+    card.id='card-'+d.c;
+    let tag = '';
+    if(d.t==='f') tag = '<div class="tag">obrigatória nesta ênfase</div>';
+    if(d.t==='e') tag = '<div class="tag">eletiva</div>';
+    card.innerHTML = '<div class="code">'+d.c+'</div><div class="name">'+d.n+'</div>'+tag;
+    card.addEventListener('click', ()=>select(d.c));
+    col.appendChild(card);
+  });
+  board.appendChild(col);
+}
+
+const byCode = Object.fromEntries(data.map(d=>[d.c,d]));
+let current = null;
+const svg = document.getElementById('lines');
+
+function select(code){
+  if(current === code){ clear(); return; }
+  current = code;
+  render();
+}
+function clear(){
+  current = null;
+  document.querySelectorAll('.card').forEach(c=>c.className='card t-'+byCode[c.id.replace('card-','')].t);
+  svg.innerHTML='';
+}
+function render(){
+  document.querySelectorAll('.card').forEach(c=>{
+    const code = c.id.replace('card-','');
+    c.className='card t-'+byCode[code].t+' dim';
+  });
+  const preds = byCode[current].pr;
+  const succs = data.filter(d=>d.pr.includes(current)).map(d=>d.c);
+  document.getElementById('card-'+current).className='card selected';
+  preds.forEach(p=>{ const el=document.getElementById('card-'+p); if(el) el.className='card pred'; });
+  succs.forEach(s=>{ const el=document.getElementById('card-'+s); if(el) el.className='card succ'; });
+
+  svg.innerHTML='';
+  const wrap = document.getElementById('wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  svg.setAttribute('width', board.scrollWidth);
+  svg.setAttribute('height', board.scrollHeight);
+
+  function edge(fromCode, toCode, color){
+    const a = document.getElementById('card-'+fromCode);
+    const b = document.getElementById('card-'+toCode);
+    if(!a||!b) return;
+    const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+    const x1 = ra.right - wrapRect.left + wrap.scrollLeft;
+    const y1 = ra.top + ra.height/2 - wrapRect.top + wrap.scrollTop;
+    const x2 = rb.left - wrapRect.left + wrap.scrollLeft;
+    const y2 = rb.top + rb.height/2 - wrapRect.top + wrap.scrollTop;
+    const midx = (x1+x2)/2;
+    const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', `M${x1},${y1} C${midx},${y1} ${midx},${y2} ${x2},${y2}`);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke',color);
+    path.setAttribute('stroke-width','1.6');
+    path.setAttribute('opacity','0.85');
+    svg.appendChild(path);
+  }
+  preds.forEach(p=> edge(p, current, '#993c1d'));
+  succs.forEach(s=> edge(current, s, '#0f6e56'));
+}
+</script>
+</body>
+</html>
